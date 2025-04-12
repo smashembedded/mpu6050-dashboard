@@ -2,7 +2,7 @@
 
 # MPU6050 IMU
 ![PlatformIO](https://img.shields.io/badge/platformio-ready-orange)
-![License](https://img.shields.io/github/license/smashembedded/mpu6050-dashboard)
+[![License](https://img.shields.io/github/license/smashembedded/mpu6050-dashboard)](./LICENSE)
 ![GitHub stars](https://img.shields.io/github/stars/smashembedded/mpu6050-dashboard?style=social)
 
 A real-time ESP32 IMU dashboard using **MPU6050**, **WebSockets**, and **Chart.js**, built as a [PlatformIO](https://platformio.org/) project. It uses **FreeRTOS** under the hood to run sensor data acquisition on a dedicated core task.
