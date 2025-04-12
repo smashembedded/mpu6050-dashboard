@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MPU6050 IMU Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h2 {
+            color: #00ff00;
+            text-align: center;
+        }
+
+        .chart-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .chart-container {
+            flex: 1 1 45%;
+            min-width: 300px;
+            background-color: #1a1a1a;
+            ;
+            border: 1px solid #00ff00;
+            padding: 10px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        #console {
+            background-color: #111;
+            border: 1px solid #00ff00;
+            padding: 10px;
+            height: 200px;
+            overflow-y: scroll;
+            font-size: 0.9em;
+            margin-top: 30px;
+        }
+
+        h3 {
+            color: #00ff00;
+        }
+
+        @media (max-width: 768px) {
+            .chart-row {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Smash Embedded MPU6050 Dashboard</h2>
+    <h4 style="color:#00ff00; font-weight:normal; margin-top:-10px;text-align:center;">01000110 01010101 01001110</h4>
+
+    <div class="chart-row">
+        <div class="chart-container">
+            <canvas id="accelChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="gyroChart"></canvas>
+        </div>
+    </div>
+
+    <h3>WebSocket Console</h3>
+    <div id="console"></div>
+
+    <script>
+        let ws = new WebSocket("ws://" + window.location.host + "/ws");
+        const consoleBox = document.getElementById("console");
+        let time = 0;
+        const timeStep = 50;
+
+        function log(message, type = "info") {
+            const p = document.createElement("div");
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            if (type === "error") p.style.color = "red";
+            consoleBox.appendChild(p);
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        ws.onopen = () => log("WebSocket connection established.");
+        ws.onerror = err => log("WebSocket error: " + err, "error");
+        ws.onclose = () => log("WebSocket connection closed.");
+
+        ws.onmessage = event => {
+            //log("Data received: " + event.data.slice(0, 60) + "...");
+            const samples = JSON.parse(event.data);
+            samples.forEach(data => {
+                const acc = `x=${data.accelX.toFixed(2)}, y=${data.accelY.toFixed(2)}, z=${data.accelZ.toFixed(2)}`;
+                const gyro = `x=${data.gyroX.toFixed(2)}, y=${data.gyroY.toFixed(2)}, z=${data.gyroZ.toFixed(2)}`;
+                log(`Accel: ${acc} | Gyro: ${gyro}`);
+                updateCharts(data.accelX, data.accelY, data.accelZ, data.gyroX, data.gyroY, data.gyroZ);
+            });
+
+
+            try {
+                const samples = JSON.parse(event.data);
+                samples.forEach(data => {
+                    updateCharts(data.accelX, data.accelY, data.accelZ, data.gyroX, data.gyroY, data.gyroZ);
+                });
+            } catch (e) {
+                log("Failed to parse data: " + e, "error");
+            }
+        };
+
+        const timeLabels = Array(50).fill(0).map((_, i) => `${i * timeStep}ms`);
+
+        const accelChart = new Chart(document.getElementById("accelChart"), {
+            type: "line",
+            data: {
+                labels: [...timeLabels],
+                datasets: [
+                    { label: "Accel X", borderColor: "#ff3333", data: [], fill: false },
+                    { label: "Accel Y", borderColor: "#33ff33", data: [], fill: false },
+                    { label: "Accel Z", borderColor: "#3399ff", data: [], fill: false }
+                ]
+            },
+            options: {
+                animation: false,
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { title: { display: true, text: "Time" }, ticks: { color: "#00ff00" } },
+                    y: { title: { display: true, text: "Acceleration (m/s²)" }, min: -20, max: 20, ticks: { color: "#00ff00" } }
+                },
+                plugins: {
+                    legend: { labels: { color: "#00ff00" } }
+                }
+            }
+        });
+
+        const gyroChart = new Chart(document.getElementById("gyroChart"), {
+            type: "line",
+            data: {
+                labels: [...timeLabels],
+                datasets: [
+                    { label: "Gyro X", borderColor: "#00ffff", data: [], fill: false },
+                    { label: "Gyro Y", borderColor: "#ff00ff", data: [], fill: false },
+                    { label: "Gyro Z", borderColor: "#ffff00", data: [], fill: false }
+                ]
+            },
+            options: {
+                animation: false,
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { title: { display: true, text: "Time" }, ticks: { color: "#00ff00" } },
+                    y: { title: { display: true, text: "Angular Velocity (rad/s)" }, min: -10, max: 10, ticks: { color: "#00ff00" } }
+                },
+                plugins: {
+                    legend: { labels: { color: "#00ff00" } }
+                }
+            }
+        });
+
+        function updateCharts(ax, ay, az, gx, gy, gz) {
+            const newAccel = [ax, ay, az];
+            const newGyro = [gx, gy, gz];
+
+            accelChart.data.datasets.forEach((ds, i) => {
+                ds.data.push(newAccel[i]);
+                if (ds.data.length > 50) ds.data.shift();
+            });
+
+            gyroChart.data.datasets.forEach((ds, i) => {
+                ds.data.push(newGyro[i]);
+                if (ds.data.length > 50) ds.data.shift();
+            });
+
+            time += timeStep;
+            accelChart.data.labels.push(`${time}ms`);
+            gyroChart.data.labels.push(`${time}ms`);
+            if (accelChart.data.labels.length > 50) accelChart.data.labels.shift();
+            if (gyroChart.data.labels.length > 50) gyroChart.data.labels.shift();
+
+            accelChart.update();
+            gyroChart.update();
+        }
+    </script>
+</body>
+
+</html>
