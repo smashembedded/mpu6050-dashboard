@@ -1,4 +1,4 @@
-<img src="https://github.com/smashembedded.png" alt="Smash Embedded" width="100" height="auto"/>
+<img src="https://github.com/smashembedded.png" alt="Smash Embedded" width="250" height="auto"/>
 
 # MPU6050 IMU
 
@@ -27,6 +27,7 @@ A real-time ESP32 IMU dashboard using **MPU6050**, **WebSockets**, and **Chart.j
 Install the [PlatformIO IDE](https://platformio.org/install) (VS Code extension recommended)
 
 ## Wiring Diagram
+
 <img src="images/mpu6050-dashboad.fzz.png" alt="Wiring Diagram" width="150" height="auto"/>
 
 ## Setup
@@ -96,7 +97,7 @@ Check `platormio.ini`:
 
 ## License
 
-[Apache License 2.0](LICENSE) © Smash Embedded  
+[Apache License 2.0](LICENSE) © Smash Embedded
 See the [Apache License](https://www.apache.org/licenses/LICENSE-2.0) for full terms.
 
 ## Credits
